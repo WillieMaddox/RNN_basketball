@@ -14,11 +14,6 @@ the directory where your data is stored.
 
 """
 
-# The folder where your dataset is. Note that is must end with a '/'
-direc = 'data/'
-
-plot = True  # Set True if you wish plots and visualizations
-
 from sklearn import metrics
 import numpy as np
 import tensorflow as tf
@@ -31,19 +26,24 @@ import sklearn
 from dataloader import *
 from model import *
 
+# The folder where your dataset is. Note that is must end with a '/'
+direc = 'data/'
+
+plot = True  # Set True if you wish plots and visualizations
+
 """Hyperparameters"""
 config = {}
 config['MDN'] = MDN = True  # Set to falso for only the classification network
-config['num_layers'] = 2  # Number of layers for the LSTM
+config['num_layers'] = 3  # Number of layers for the LSTM
 config['hidden_size'] = 64  # Hidden size of the LSTM
 config['max_grad_norm'] = 1  # Clip the gradients during training
-config['batch_size'] = batch_size = 32
+config['batch_size'] = batch_size = 128
 config['sl'] = sl = 12  # Sequence length to extract data
 config['mixtures'] = 3  # Number of mixtures for the MDN
 config['learning_rate'] = .005  # Initial learning rate
 
 ratio = 0.8  # Ratio for train-val split
-plot_every = 1000  # How often do you want terminal output for the performances
+plot_every = 100  # How often do you want terminal output for the performances
 max_iterations = 20000  # Maximum number of training iterations
 dropout = 0.7  # Dropout rate in the fully connected layer
 
@@ -60,7 +60,7 @@ dl = DataLoad(direc, csv_file, center)
 dl.munge_data(11, sl, db)
 # Center the data
 dl.center_data(center)
-dl.split_train_test(ratio=0.8)
+dl.split_train_test(ratio=ratio)
 data_dict = dl.data
 if plot:
     dl.plot_traj_2d(20, 'at %.0f feet from basket' % db)
@@ -91,7 +91,7 @@ auc_ma = 0.0
 auc_best = 0.0
 
 if True:
-    #  writer = tf.train.SummaryWriter("/home/rob/Dropbox/ml_projects/MDN/log_tb", sess.graph)
+    writer = tf.summary.FileWriter("/home/maddoxw/git/RNN_basketball/log_tb", sess.graph)
 
     sess.run(tf.global_variables_initializer())
 
@@ -102,33 +102,34 @@ if True:
         batch_ind = np.random.choice(N, batch_size, replace=False)
         if i % plot_every == 0:
             # Check training performance #
+            fetch = [model.accuracy, model.cost]
             if MDN:
-                fetch = [model.accuracy, model.cost, model.cost_seq]
-            else:
-                fetch = [model.accuracy, model.cost]
-            result = sess.run(fetch, feed_dict={model.x: X_train[batch_ind], model.y_: y_train[batch_ind],
+                fetch.append(model.cost_seq)
+
+            result = sess.run(fetch, feed_dict={model.x: X_train[batch_ind],
+                                                model.y_: y_train[batch_ind],
                                                 model.keep_prob: 1.0})
             perf_collect[0, step] = result[0]
             perf_collect[1, step] = cost_train = result[1]
             if MDN:
-                perf_collect[4, step] = cost_train_seq = result[2]
+                cost_train_seq = perf_collect[4, step] = result[2]
             else:
                 cost_train_seq = 0.0
 
             # Check validation performance #
             batch_ind_val = np.random.choice(Nval, batch_size, replace=False)
+            fetch = [model.accuracy, model.cost, model.merged, model.h_c]
             if MDN:
-                fetch = [model.accuracy, model.cost, model.merged, model.h_c, model.cost_seq]
-            else:
-                fetch = [model.accuracy, model.cost, model.merged, model.h_c]
+                fetch.append(model.cost_seq)
 
-            result = sess.run(fetch, feed_dict={model.x: X_val[batch_ind_val], model.y_: y_val[batch_ind_val],
+            result = sess.run(fetch, feed_dict={model.x: X_val[batch_ind_val],
+                                                model.y_: y_val[batch_ind_val],
                                                 model.keep_prob: 1.0})
             acc = result[0]
             perf_collect[2, step] = acc
             perf_collect[3, step] = cost_val = result[1]
             if MDN:
-                perf_collect[5, step] = cost_val_seq = result[4]
+                cost_val_seq = perf_collect[5, step] = result[4]
             else:
                 cost_val_seq = 0.0
 
@@ -147,28 +148,34 @@ if True:
             # if auc_ma < 0.8*auc_best: early_stop = True
             # Write information to TensorBoard
             summary_str = result[2]
-            #      writer.add_summary(summary_str, i)
-            #      writer.flush()
+            writer.add_summary(summary_str, i)
+            writer.flush()
             print("At %6s / %6s val acc %5.3f and AUC is %5.3f(%5.3f) trainloss %5.3f / %5.3f(%5.3f)" % (
             i, max_iterations, acc, AUC, auc_ma, cost_train, cost_train_seq, cost_val_seq))
             print("At {}, the training cost is {}, the valid cost is {}".format(i, perf_collect[1, step],
                                                                                 perf_collect[3, step]))
             print("The best AUC is %6s" % auc_best)
             step += 1
-        sess.run(model.train_step,
-                 feed_dict={model.x: X_train[batch_ind], model.y_: y_train[batch_ind], model.keep_prob: dropout})
+
+        sess.run(model.train_step, feed_dict={model.x: X_train[batch_ind],
+                                              model.y_: y_train[batch_ind],
+                                              model.keep_prob: dropout})
         i += 1
     # In the next line we also fetch the softmax outputs
     batch_ind_val = np.random.choice(Nval, batch_size, replace=False)
-    result = sess.run([model.accuracy, model.numel],
-                      feed_dict={model.x: X_val[batch_ind_val], model.y_: y_val[batch_ind_val], model.keep_prob: 1.0})
+    result = sess.run([model.accuracy, model.numel], feed_dict={model.x: X_val[batch_ind_val],
+                                                                model.y_: y_val[batch_ind_val],
+                                                                model.keep_prob: 1.0})
     acc_test = result[0]
     print('The network has %s trainable parameters' % result[1])
 
 if plot:
     """Sample from the MDN"""
     if MDN:
-        val_dict = {model.x: X_val[batch_ind_val], model.y_: y_val[batch_ind_val], model.keep_prob: 1.0}
+        val_dict = {model.x: X_val[batch_ind_val],
+                    model.y_: y_val[batch_ind_val],
+                    model.keep_prob: 1.0}
+
         batch = X_val[batch_ind_val]
         plot_traj_MDN_mult(model, sess, val_dict, batch)
 

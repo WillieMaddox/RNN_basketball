@@ -58,30 +58,28 @@ class Model():
             # self.states = []
             # state = initial_state
             # for time_step in range(sl):
-            #   if time_step > 0: tf.get_variable_scope().reuse_variables()
-            #   (cell_output, state) = cell(self.x[:, :, time_step], state)
-            #   outputs.append(cell_output)
-            #   self.states.append(state)
+            #     if time_step > 0:
+            #         tf.get_variable_scope().reuse_variables()
+            #     (cell_output, state) = cell(self.x[:, :, time_step], state)
+            #     outputs.append(cell_output)
+            #     self.states.append(state)
             # self.final_state = state
-            # outputs is now a list of length seq_len with tensors [ batch_size by
-            # hidden_size ]
+            # outputs is now a list of length seq_len with tensors [ batch_size by hidden_size ]
 
         with tf.name_scope("SoftMax") as scope:
             final = outputs[-1]
             W_c = tf.Variable(tf.random_normal([hidden_size, 2], stddev=0.01))
             b_c = tf.Variable(tf.constant(0.1, shape=[2]))
             self.h_c = tf.matmul(final, W_c) + b_c
-
             loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.h_c, labels=self.y_)
             self.cost = tf.reduce_mean(loss)
-            loss_summ = tf.summary.scalar("cross entropy_loss", self.cost)
+            loss_summ = tf.summary.scalar("cross_entropy_loss", self.cost)
 
         with tf.name_scope("Output_MDN") as scope:
             params = 8  # 7+theta
             # Two for distribution over hit&miss, params for distribution parameters
             output_units = mixtures * params
-            W_o = tf.Variable(tf.random_normal(
-                [hidden_size, output_units], stddev=0.01))
+            W_o = tf.Variable(tf.random_normal([hidden_size, output_units], stddev=0.01))
             b_o = tf.Variable(tf.constant(0.5, shape=[output_units]))
             # For comparison with XYZ, only up to last time_step
             # --> because for final time_step you cannot make a prediction
@@ -90,13 +88,11 @@ class Model():
             h_out_tensor = tf.nn.xw_plus_b(outputs_tensor, W_o, b_o)
 
         with tf.name_scope('MDN_over_next_vector') as scope:
-            # Next two lines are rather ugly, But its the most efficient way to
-            # reshape the data
+            # Next two lines are rather ugly, But its the most efficient way to reshape the data
             h_xyz = tf.reshape(h_out_tensor, (sl - 1, batch_size, output_units))
             # transpose to [batch_size, output_units, sl-1]
             h_xyz = tf.transpose(h_xyz, [1, 2, 0])
-            # x_next = tf.slice(x,[0,0,1],[batch_size,3,sl-1])  #in size [batch_size,
-            # output_units, sl-1]
+            # x_next = tf.slice(x,[0,0,1],[batch_size,3,sl-1])  #in size [batch_size, output_units, sl-1]
             x_next = tf.subtract(self.x[:, :3, 1:], self.x[:, :3, :sl - 1])
             # From here any, many variables have size [batch_size, mixtures, sl-1]
             xn1, xn2, xn3 = tf.split(x_next, 3, axis=1)
@@ -118,8 +114,7 @@ class Model():
             self.rho = tf.tanh(self.rho)
 
             # probability in x1x2 plane
-            px1x2 = tf_2d_normal(xn1, xn2, self.mu1, self.mu2,
-                                 self.s1, self.s2, self.rho)
+            px1x2 = tf_2d_normal(xn1, xn2, self.mu1, self.mu2, self.s1, self.s2, self.rho)
             px3 = tf_1d_normal(xn3, self.mu3, self.s3)
             px1x2x3 = tf.multiply(px1x2, px3)
 
@@ -142,12 +137,10 @@ class Model():
 
             # Some decay on the learning rate
             global_step = tf.Variable(0, trainable=False)
-            lr = tf.train.exponential_decay(
-                learning_rate, global_step, 14000, 0.95, staircase=True)
+            lr = tf.train.exponential_decay(learning_rate, global_step, 14000, 0.95, staircase=True)
             optimizer = tf.train.AdamOptimizer(lr)
             gradients = zip(grads, tvars)
-            self.train_step = optimizer.apply_gradients(
-                gradients, global_step=global_step)
+            self.train_step = optimizer.apply_gradients(gradients, global_step=global_step)
             # The following block plots for every trainable variable
             #  - Histogram of the entries of the Tensor
             #  - Histogram of the gradient over the Tensor
@@ -160,10 +153,10 @@ class Model():
                     grad_values = gradient
 
                 self.numel += tf.reduce_sum(tf.size(variable))
-        #
-        #        h1 = tf.histogram_summary(variable.name, variable)
-        #        h2 = tf.histogram_summary(variable.name + "/gradients", grad_values)
-        #        h3 = tf.histogram_summary(variable.name + "/gradient_norm", clip_ops.global_norm([grad_values]))
+
+                h1 = tf.summary.histogram(variable.name, variable)
+                h2 = tf.summary.histogram(variable.name + "/gradients", grad_values)
+                h3 = tf.summary.histogram(variable.name + "/gradient_norm", clip_ops.global_norm([grad_values]))
 
         with tf.name_scope("Evaluating_accuracy") as scope:
             correct_prediction = tf.equal(tf.argmax(self.h_c, 1), self.y_)

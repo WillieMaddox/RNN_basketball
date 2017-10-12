@@ -98,8 +98,8 @@ class DataLoad():
                 li, i = return_large_true(ind_crit)
                 seq = seq[i:i + li, :]  # Excludes rows where z coordinate is lower than "height"
                 try:
-                    seq[:, 3] = seq[:, 3] - np.min(
-                        seq[:, 3])  # NOTE: this implementation assumes that the time is ticking down
+                    # NOTE: this implementation assumes that the time is ticking down
+                    seq[:, 3] = seq[:, 3] - np.min(seq[:, 3])
                 except:
                     print('A sequence didnt match criteria')
                 if seq.shape[0] >= seq_len:

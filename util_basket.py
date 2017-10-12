@@ -41,10 +41,8 @@ def plot_basket(data, labels, extra_title=' '):
             ax.plot(data[p, 0, :], data[p, 1, :], data[p, 2, :], 'r', label='miss')
         elif labels[p] == 0:
             ax.plot(data[p, 0, :], data[p, 1, :], data[p, 2, :], 'b', label='hit')
-
         elif labels[p] == 2:
             ax.plot(data[p, 0, :], data[p, 1, :], data[p, 2, :], 'c', label='lc hit')
-
         elif labels[p] == 3:
             ax.plot(data[p, 0, :], data[p, 1, :], data[p, 2, :], 'm', label='lc miss')
 
@@ -137,7 +135,7 @@ def conf_ind(conf_correct, y_val, am, which_conf):
 
     if which_conf == 'hc':
         conf_ind = np.argsort(conf_correct)[::-1]  # indices for which we have the highest confidence.
-        # descending order, becase we are interested in high confidence
+        # descending order, because we are interested in high confidence
         count = 0
     elif which_conf == 'lc':
         conf_ind = np.argsort(conf_correct)
@@ -148,9 +146,9 @@ def conf_ind(conf_correct, y_val, am, which_conf):
     y_val.astype(int)  # change so that we can use it for indexing
 
     # Set up some variables
-    conf_pos = np.zeros((am))
+    conf_pos = np.zeros(am)
     ipos = 0
-    conf_neg = np.zeros((am))
+    conf_neg = np.zeros(am)
     ineg = 0
 
     while count < N:  # while we're still in the array

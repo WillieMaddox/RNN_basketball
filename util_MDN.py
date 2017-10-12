@@ -15,11 +15,11 @@ import matplotlib.pyplot as plt
 
 def tf_2d_normal(x1, x2, mu1, mu2, s1, s2, rho):
     """ 2D normal distribution
-  input
-  - x,mu: input vectors
-  - s1,s2: standard deviances over x1 and x2
-  - rho: correlation coefficient in x1-x2 plane
-  """
+    input
+    - x,mu: input vectors
+    - s1,s2: standard deviances over x1 and x2
+    - rho: correlation coefficient in x1-x2 plane
+    """
     # eq # 24 and 25 of http://arxiv.org/abs/1308.0850
     norm1 = tf.subtract(x1, mu1)
     norm2 = tf.subtract(x2, mu2)
@@ -34,11 +34,11 @@ def tf_2d_normal(x1, x2, mu1, mu2, s1, s2, rho):
 
 def tf_1d_normal(x3, mu3, s3):
     """ 3D normal distribution Under assumption that x3 is uncorrelated with x1 and x2
-  input
-  - x,mu: input vectors
-  - s1,s2,s3: standard deviances over x1 and x2 and x3
-  - rho: correlation coefficient in x1-x2 plane
-  """
+    input
+    - x,mu: input vectors
+    - s1,s2,s3: standard deviances over x1 and x2 and x3
+    - rho: correlation coefficient in x1-x2 plane
+    """
     norm3 = tf.subtract(x3, mu3)
     z = tf.square(tf.div(norm3, s3))
     result = tf.exp(tf.div(-z, 2))
