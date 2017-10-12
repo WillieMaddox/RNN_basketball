@@ -44,7 +44,7 @@ config['learning_rate'] = .005  # Initial learning rate
 
 ratio = 0.8  # Ratio for train-val split
 plot_every = 100  # How often do you want terminal output for the performances
-max_iterations = 20000  # Maximum number of training iterations
+max_iterations = 2000  # Maximum number of training iterations
 dropout = 0.7  # Dropout rate in the fully connected layer
 
 db = 5  # distance to basket to stop trajectories
@@ -109,12 +109,13 @@ if True:
             result = sess.run(fetch, feed_dict={model.x: X_train[batch_ind],
                                                 model.y_: y_train[batch_ind],
                                                 model.keep_prob: 1.0})
-            perf_collect[0, step] = result[0]
-            perf_collect[1, step] = cost_train = result[1]
+            # train_acc = result[0]
+            perf_collect[0, step] = train_acc = result[0]
+            perf_collect[1, step] = train_cost = result[1]
             if MDN:
-                cost_train_seq = perf_collect[4, step] = result[2]
+                train_cost_seq = perf_collect[4, step] = result[2]
             else:
-                cost_train_seq = 0.0
+                train_cost_seq = 0.0
 
             # Check validation performance #
             batch_ind_val = np.random.choice(Nval, batch_size, replace=False)
@@ -125,13 +126,13 @@ if True:
             result = sess.run(fetch, feed_dict={model.x: X_val[batch_ind_val],
                                                 model.y_: y_val[batch_ind_val],
                                                 model.keep_prob: 1.0})
-            acc = result[0]
-            perf_collect[2, step] = acc
-            perf_collect[3, step] = cost_val = result[1]
+            # valid_acc = result[0]
+            perf_collect[2, step] = valid_acc = result[0]
+            perf_collect[3, step] = valid_cost = result[1]
             if MDN:
-                cost_val_seq = perf_collect[5, step] = result[4]
+                valid_cost_seq = perf_collect[5, step] = result[4]
             else:
-                cost_val_seq = 0.0
+                valid_cost_seq = 0.0
 
             # Perform early stopping according to AUC score on validation set
             sm_out = result[3]
@@ -150,11 +151,16 @@ if True:
             summary_str = result[2]
             writer.add_summary(summary_str, i)
             writer.flush()
-            print("At %6s / %6s val acc %5.3f and AUC is %5.3f(%5.3f) trainloss %5.3f / %5.3f(%5.3f)" % (
-            i, max_iterations, acc, AUC, auc_ma, cost_train, cost_train_seq, cost_val_seq))
-            print("At {}, the training cost is {}, the valid cost is {}".format(i, perf_collect[1, step],
-                                                                                perf_collect[3, step]))
-            print("The best AUC is %6s" % auc_best)
+            print('iter', 'train acc', 'train cost', 'train seq', 'valid cost', 'valid acc',
+                  'valid seq', 'AUC', 'valid AUC', 'best AUC')
+            print("{} {:5.3f} {:5.3f} {} {:5.3f} {:5.3f} {:5.3f} {:5.3f} {:5.3f} {:5.3f}".format(
+                i, train_acc, train_cost, train_cost_seq, valid_cost, valid_acc, valid_cost_seq, AUC, auc_ma, auc_best
+            ))
+
+            # print("At %6s / %6s val acc %5.3f and AUC is %5.3f(%5.3f) trainloss %5.3f / %5.3f(%5.3f)" % (
+            #     i, max_iterations, acc, AUC, auc_ma, cost_train, cost_train_seq, cost_val_seq))
+            # print("At {}, the training cost is {}, the valid cost is {}".format(i, perf_collect[1, step], perf_collect[3, step]))
+            # print("The best AUC is %6s" % auc_best)
             step += 1
 
         sess.run(model.train_step, feed_dict={model.x: X_train[batch_ind],
