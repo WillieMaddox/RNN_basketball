@@ -139,14 +139,13 @@ class Model():
             global_step = tf.Variable(0, trainable=False)
             lr = tf.train.exponential_decay(learning_rate, global_step, 14000, 0.95, staircase=True)
             optimizer = tf.train.AdamOptimizer(lr)
-            gradients = zip(grads, tvars)
-            self.train_step = optimizer.apply_gradients(gradients, global_step=global_step)
+            self.train_step = optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
             # The following block plots for every trainable variable
             #  - Histogram of the entries of the Tensor
             #  - Histogram of the gradient over the Tensor
-            #  - Histogram of the grradient-norm over the Tensor
+            #  - Histogram of the gradient-norm over the Tensor
             self.numel = tf.constant([[0]])
-            for gradient, variable in gradients:
+            for gradient, variable in zip(grads, tvars):
                 grad_values = gradient.values if isinstance(gradient, ops.IndexedSlices) else gradient
                 self.numel += tf.reduce_sum(tf.size(variable))
 

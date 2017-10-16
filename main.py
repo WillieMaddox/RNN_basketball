@@ -34,12 +34,12 @@ plot = True  # Set True if you wish plots and visualizations
 """Hyperparameters"""
 config = {}
 config['MDN'] = MDN = True  # Set to false for only the classification network
-config['num_layers'] = 3  # Number of layers for the LSTM
+config['num_layers'] = 2  # Number of layers for the LSTM
 config['hidden_size'] = 64  # Hidden size of the LSTM
 config['max_grad_norm'] = 1  # Clip the gradients during training
-config['batch_size'] = batch_size = 128
-config['sl'] = sl = 24  # Sequence length to extract data
-config['mixtures'] = 4  # Number of mixtures for the MDN
+config['batch_size'] = batch_size = 64
+config['sl'] = sl = 18  # Sequence length to extract data
+config['mixtures'] = 3  # Number of mixtures for the MDN
 config['learning_rate'] = .005  # Initial learning rate
 
 ratio = 0.8  # Ratio for train-val split
@@ -216,9 +216,9 @@ if plot:
     plt.show()
 
     """Export to Shiny for visualization"""
-    export_shiny = True
-    export_lab = []  # The logs to export containing the sl_pre and bias
+    export_shiny = False
     if export_shiny:
+        export_lab = []  # The logs to export containing the sl_pre and bias
         block = 0
         seq_exp = seq_pre.copy()
         for pre in np.arange(5, 10):
