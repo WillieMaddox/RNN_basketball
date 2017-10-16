@@ -26,25 +26,26 @@ import sklearn
 from dataloader import *
 from model import *
 
-# The folder where your dataset is. Note that is must end with a '/'
+# The folder where your dataset is. Note that it must end with a '/'
 direc = 'data/'
 
 plot = True  # Set True if you wish plots and visualizations
 
 """Hyperparameters"""
 config = {}
-config['MDN'] = MDN = True  # Set to falso for only the classification network
+config['MDN'] = MDN = True  # Set to false for only the classification network
 config['num_layers'] = 3  # Number of layers for the LSTM
 config['hidden_size'] = 64  # Hidden size of the LSTM
 config['max_grad_norm'] = 1  # Clip the gradients during training
 config['batch_size'] = batch_size = 128
-config['sl'] = sl = 12  # Sequence length to extract data
-config['mixtures'] = 3  # Number of mixtures for the MDN
+config['sl'] = sl = 24  # Sequence length to extract data
+config['mixtures'] = 4  # Number of mixtures for the MDN
 config['learning_rate'] = .005  # Initial learning rate
 
 ratio = 0.8  # Ratio for train-val split
 plot_every = 100  # How often do you want terminal output for the performances
-max_iterations = 2000  # Maximum number of training iterations
+header_every = plot_every * 20
+max_iterations = 4000  # Maximum number of training iterations
 dropout = 0.7  # Dropout rate in the fully connected layer
 
 db = 5  # distance to basket to stop trajectories
@@ -101,6 +102,7 @@ if True:
     while i < max_iterations and not early_stop:
         batch_ind = np.random.choice(N, batch_size, replace=False)
         if i % plot_every == 0:
+
             # Check training performance #
             fetch = [model.accuracy, model.cost]
             if MDN:
@@ -109,13 +111,9 @@ if True:
             result = sess.run(fetch, feed_dict={model.x: X_train[batch_ind],
                                                 model.y_: y_train[batch_ind],
                                                 model.keep_prob: 1.0})
-            # train_acc = result[0]
-            perf_collect[0, step] = train_acc = result[0]
-            perf_collect[1, step] = train_cost = result[1]
-            if MDN:
-                train_cost_seq = perf_collect[4, step] = result[2]
-            else:
-                train_cost_seq = 0.0
+            train_acc = result[0]
+            train_cost = result[1]
+            train_cost_seq = result[2] if MDN else 0.0
 
             # Check validation performance #
             batch_ind_val = np.random.choice(Nval, batch_size, replace=False)
@@ -126,47 +124,59 @@ if True:
             result = sess.run(fetch, feed_dict={model.x: X_val[batch_ind_val],
                                                 model.y_: y_val[batch_ind_val],
                                                 model.keep_prob: 1.0})
-            # valid_acc = result[0]
-            perf_collect[2, step] = valid_acc = result[0]
-            perf_collect[3, step] = valid_cost = result[1]
-            if MDN:
-                valid_cost_seq = perf_collect[5, step] = result[4]
-            else:
-                valid_cost_seq = 0.0
+            valid_acc = result[0]
+            valid_cost = result[1]
+            valid_cost_seq = result[4] if MDN else 0.0
 
             # Perform early stopping according to AUC score on validation set
             sm_out = result[3]
             # Pick of the column in sm_out is arbitrary. If you see consistently AUC's under 0.5, then switch columns
             AUC = sklearn.metrics.roc_auc_score(y_val[batch_ind_val], sm_out[:, 1])
+            if auc_best < AUC:
+                auc_best = AUC
+
+            perf_collect[0, step] = train_acc
+            perf_collect[1, step] = train_cost
+            perf_collect[2, step] = valid_acc
+            perf_collect[3, step] = valid_cost
+            perf_collect[4, step] = train_cost_seq
+            perf_collect[5, step] = valid_cost_seq
             perf_collect[6, step] = AUC
+
             ma_range = 5  # How many iterations to average over for AUCS
             if step > ma_range:
                 auc_ma = np.mean(perf_collect[6, step - ma_range + 1:step + 1])
             elif 1 < step <= ma_range:
                 auc_ma = np.mean(perf_collect[6, :step + 1])
+            # if auc_ma < 0.8*auc_best:
+            #     early_stop = True
 
-            if auc_best < AUC: auc_best = AUC
-            # if auc_ma < 0.8*auc_best: early_stop = True
             # Write information to TensorBoard
             summary_str = result[2]
             writer.add_summary(summary_str, i)
             writer.flush()
-            print('iter', 'train acc', 'train cost', 'train seq', 'valid cost', 'valid acc',
-                  'valid seq', 'AUC', 'valid AUC', 'best AUC')
-            print("{} {:5.3f} {:5.3f} {} {:5.3f} {:5.3f} {:5.3f} {:5.3f} {:5.3f} {:5.3f}".format(
-                i, train_acc, train_cost, train_cost_seq, valid_cost, valid_acc, valid_cost_seq, AUC, auc_ma, auc_best
+
+            if i % header_every == 0:
+                print("{:>6} {:>6} {:>6} {:>6} {:>6} {:>6} {:>6} {:>6} {:>6} {:>6}".format(
+                    '', '', 'train', '', '', 'valid', '', '', 'AUC', ''))
+                print("{:>6} {:>6} {:>6} {:>6} {:>6} {:>6} {:>6} {:>6} {:>6} {:>6}".format(
+                    'iter', 'acc', 'cost', 'seq', 'acc', 'cost', 'seq', 'curr', 'valid', 'best'))
+            print("{:>6} {:>6.3f} {:>6.3f} {:>6.3f} {:>6.3f} {:>6.3f} {:>6.3f} {:>6.3f} {:>6.3f} {:>6.3f}".format(
+                i, train_acc, train_cost, train_cost_seq, valid_acc, valid_cost, valid_cost_seq, AUC, auc_ma, auc_best
             ))
 
             # print("At %6s / %6s val acc %5.3f and AUC is %5.3f(%5.3f) trainloss %5.3f / %5.3f(%5.3f)" % (
             #     i, max_iterations, acc, AUC, auc_ma, cost_train, cost_train_seq, cost_val_seq))
             # print("At {}, the training cost is {}, the valid cost is {}".format(i, perf_collect[1, step], perf_collect[3, step]))
             # print("The best AUC is %6s" % auc_best)
+
             step += 1
 
         sess.run(model.train_step, feed_dict={model.x: X_train[batch_ind],
                                               model.y_: y_train[batch_ind],
                                               model.keep_prob: dropout})
         i += 1
+
     # In the next line we also fetch the softmax outputs
     batch_ind_val = np.random.choice(Nval, batch_size, replace=False)
     result = sess.run([model.accuracy, model.numel], feed_dict={model.x: X_val[batch_ind_val],

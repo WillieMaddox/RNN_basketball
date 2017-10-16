@@ -147,11 +147,7 @@ class Model():
             #  - Histogram of the grradient-norm over the Tensor
             self.numel = tf.constant([[0]])
             for gradient, variable in gradients:
-                if isinstance(gradient, ops.IndexedSlices):
-                    grad_values = gradient.values
-                else:
-                    grad_values = gradient
-
+                grad_values = gradient.values if isinstance(gradient, ops.IndexedSlices) else gradient
                 self.numel += tf.reduce_sum(tf.size(variable))
 
                 h1 = tf.summary.histogram(variable.name, variable)
@@ -167,14 +163,13 @@ class Model():
         self.merged = tf.summary.merge_all()
 
     def sample(self, sess, seq, sl_pre=4, bias=0):
-        """Continually samples from the MDN. The frist "sl_pre" samples
-    are taken from original data in seq
-    input
-    - sess: tf session
-    - seq: a sequence in [crd,sl]
-    - sl_pre: how many predefined sequence stamps to use?"""
-        assert seq.shape[1] == self.sl and seq.shape[
-                                               0] == self.crd, 'Feed a sequence in [crd,sl]'
+        """Continually samples from the MDN. The first "sl_pre" samples
+        are taken from original data in seq
+        input
+        - sess: tf session
+        - seq: a sequence in [crd,sl]
+        - sl_pre: how many predefined sequence stamps to use?"""
+        assert seq.shape[1] == self.sl and seq.shape[0] == self.crd, 'Feed a sequence in [crd,sl]'
         assert sl_pre > 1, 'Please provide two predefined coordinates'
 
         def sample_theta(thetas):

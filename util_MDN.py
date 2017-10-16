@@ -112,6 +112,7 @@ def tf_1d_normal(x3, mu3, s3):
 #  ax.set_xlabel('y coordinate')
 #  ax.set_ylabel('Z coordinate')
 
+
 def plot_traj_MDN_mult(model, sess, val_dict, batch, sl_plot=5, ind=-1):
     """Plots the trajectory. At given time-stamp, it plots the probability distributions
     of where the next point will be
@@ -153,7 +154,7 @@ def plot_traj_MDN_mult(model, sess, val_dict, batch, sl_plot=5, ind=-1):
 
     mixtures = result[0].shape[1]
     for m in range(mixtures):
-        mean = np.zeros((3))
+        mean = np.zeros(3)
         mean[0] = result[0][ind, m, sl_plot]
         mean[1] = result[1][ind, m, sl_plot]
         mean[2] = result[2][ind, m, sl_plot]

@@ -48,20 +48,20 @@ def plot_basket(data, labels, extra_title=' '):
 
     # Next lines serve to only plot one legend per label
     handles, labels = ax.get_legend_handles_labels()
-    newLabels, newHandles = [], []
+    new_labels, new_handles = [], []
     for handle, label in zip(handles, labels):
-        if label not in newLabels:
-            newLabels.append(label)
-            newHandles.append(handle)
-    ax.legend(newHandles, newLabels)
+        if label not in new_labels:
+            new_labels.append(label)
+            new_handles.append(handle)
+    ax.legend(new_handles, new_labels)
     plt.title('Blue=hit, red=miss ' + extra_title)
     plt.show()
 
 
-def shuffle_basket(X, order, ind):
+def shuffle_basket(x, order, ind):
     """Function in order to calculate variable importance during session
     The function takes in
-    - X, the data. Expected a 3D Tensor of N x crd x sl
+    - x, the data. Expected a 3D Tensor of N x crd x sl
      - N = number of samples
      - crd = how many coordinates we have
      - sl = sequence length
@@ -70,46 +70,46 @@ def shuffle_basket(X, order, ind):
      - 'sl' we will random shuffle different sequence indices
     - ind specifies the exact index along order to shuffle
     """
-    X = X.copy()
+    x = x.copy()
     if order == 'crd':
-        extract = X[:, ind, :].copy()  # Extracted 2D tensor N x sl
+        extract = x[:, ind, :].copy()  # Extracted 2D tensor N x sl
         np.random.shuffle(extract)
-        X[:, ind, :] = extract
+        x[:, ind, :] = extract
     elif order == 'sl':
-        extract = X[:, :, ind].copy()  # Extracted 2D tensor N x sl
+        extract = x[:, :, ind].copy()  # Extracted 2D tensor N x sl
         np.random.shuffle(extract)
-        X[:, :, ind] = extract
-    return X
+        x[:, :, ind] = extract
+    return x
 
 
 def plot_vi(vi_crd, vi_sl):
     # Four axes, returned as a 2-d array
-    D = vi_crd.shape[1]
+    d = vi_crd.shape[1]
     # Make color array to color baseline different
-    color = ['b'] * (D)
-    color[D - 1] = 'r'
+    color = ['b'] * d
+    color[d - 1] = 'r'
 
     # TODO For now, the axes are defined with numerics, in future we might add
     # a better heuristic here
     f, axarr = plt.subplots(2, 2)
-    axarr[0, 0].bar(range(D), vi_crd[0], color=color)
+    axarr[0, 0].bar(range(d), vi_crd[0], color=color)
     axarr[0, 0].set_title('Accuracy - crd')
-    axarr[0, 0].axis([0, D, 0.6, 1.0])
-    axarr[0, 1].bar(range(D), vi_crd[1], color=color)
+    axarr[0, 0].axis([0, d, 0.6, 1.0])
+    axarr[0, 1].bar(range(d), vi_crd[1], color=color)
     axarr[0, 1].set_title('Cost - crd')
-    axarr[0, 1].axis([0, D, 0.3, 1.0])
+    axarr[0, 1].axis([0, d, 0.3, 1.0])
     if vi_sl is not None:
         # Four axes, returned as a 2-d array
-        D = vi_sl.shape[1]
+        d = vi_sl.shape[1]
         # Make color array to color baseline different
-        color = ['b'] * (D)
-        color[D - 1] = 'r'
-        axarr[1, 0].bar(range(D), vi_sl[0], color=color)
+        color = ['b'] * d
+        color[d - 1] = 'r'
+        axarr[1, 0].bar(range(d), vi_sl[0], color=color)
         axarr[1, 0].set_title('Accuracy - sl')
-        axarr[1, 0].axis([0, D, 0.6, 1.0])
-        axarr[1, 1].bar(range(D), vi_sl[1], color=color)
+        axarr[1, 0].axis([0, d, 0.6, 1.0])
+        axarr[1, 1].bar(range(d), vi_sl[1], color=color)
         axarr[1, 1].set_title('Cost - sl')
-        axarr[1, 1].axis([0, D, 0.3, 1.0])
+        axarr[1, 1].axis([0, d, 0.3, 1.0])
 
 
 #    # Fine-tune figure; hide x ticks for top plots and y ticks for right plots
@@ -188,7 +188,7 @@ def plot_grad(data, labels, grad):
     for p in ind[:P]:
         if labels[p] == 1:
             ax.plot(data[p, 0, :], data[p, 1, :], data[p, 2, :], 'r', label='miss')
-            length_quiver = np.linalg.norm(grad[p, :3, :], axis=0)
+            # length_quiver = np.linalg.norm(grad[p, :3, :], axis=0)
             ax.quiver(data[p, 0, :], data[p, 1, :], data[p, 2, :], grad[p, 0, :], grad[p, 1, :], grad[p, 2, :],
                       length=1.0, pivot='middle')
         else:

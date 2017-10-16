@@ -13,11 +13,11 @@ from util_basket import *
 
 
 def return_large_true(ind_crit):
-    """Calculate the longest consequetive True's in ind_crit
+    """Calculate the longest consecutive True's in ind_crit
     For use in selecting indices from the sequence. ind_crit
     is a boolean array where criteria are met. This function
     return the index (best_i) and the length (best_elems) of
-    consequetive True's
+    consecutive True's
     """
     i = 0
     best_elems = 0
@@ -34,7 +34,7 @@ def return_large_true(ind_crit):
     return best_elems, best_i
 
 
-class DataLoad():
+class DataLoad:
     def __init__(self, direc, csv_file, center=np.array([5.25, 25.0, 10.0])):
         """Init the class
         input:
@@ -49,12 +49,12 @@ class DataLoad():
         # After munging, the data3 will be in [n, seq_len, crd]
         self.labels = []  # the list where eventually will be all the data
         self.is_abs = True  # Boolean to indicate if we have absolute data or offset data
-        self.data = {}  # Dictionary where the train and val date are located after split_train_test()
+        self.data = {}  # Dictionary where the train and val data are located after split_train_test()
         # Count the epochs
         self.N = 0
         self.iter_train = 0
         self.epochs = 0
-        self.omit = 0  # A counter for how many sequences didn;t match criteria
+        self.omit = 0  # A counter for how many sequences didn't match criteria
 
     def munge_data(self, height=11.0, seq_len=10.0, dist=3.0, verbose=True):
         """Function to munge the data
@@ -69,11 +69,11 @@ class DataLoad():
 
         if height < 9.0: 'Please note that height is measured from ground.'
         height = float(height)
-        #Import data
+        # Import data
         df = pd.read_csv(self.csv_loc).sort_values(['id', 'game_clock'], ascending=[1, 0])
         if verbose:
             print('The shape of the read data is ', df.shape)
-            #To plot a single shot
+            # To plot a single shot
             test = df[df['id'] == "0021500001_105"]
             test.head(10)
 
@@ -218,7 +218,7 @@ class DataLoad():
                 for i in range(seq_len):
                     listdata.append(data[key][:, i, :])
                 data[key] = listdata
-        print('Returned data with center %s' % (self.center))
+        print('Returned data with center %s' % self.center)
 
         return data
 
@@ -241,12 +241,12 @@ class DataLoad():
         plt.xlabel('Distance to basket (feet)')
         plt.ylabel('Height (feet)')
         handles, labels = plt.gca().get_legend_handles_labels()
-        newLabels, newHandles = [], []
+        new_labels, new_handles = [], []
         for handle, label in zip(handles, labels):
-            if label not in newLabels:
-                newLabels.append(label)
-                newHandles.append(handle)
-        plt.legend(newHandles, newLabels)
+            if label not in new_labels:
+                new_labels.append(label)
+                new_handles.append(handle)
+        plt.legend(new_handles, new_labels)
         plt.show()
 
     def export(self, folder, filename):
